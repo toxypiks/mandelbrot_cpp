@@ -7,6 +7,37 @@
 
 std::ofstream myFile("mandelbrot.jpg", std::ios_base::out | std::ios_base::binary);
 
+class mandelbrot_window_parameter{
+ public:
+  void zoom_in(unsigned int x, unsigned int y);
+  void zoom_out(unsigned int x, unsigned int y);
+ private: 
+  double x_min_bound;
+  double x_max_bound;
+  double y_min_bound;
+  double y_max_bound;
+  size_t resolution;
+};
+
+void mandelbrot_window_parameter::zoom_in(unsigned int x, unsigned int y) {
+  double delta_x_bound = x_max_bound - x_min_bound;
+  double delta_y_bound = y_max_bound - y_min_bound;
+  double real_x = (delta_x_bound * x)/1000 - x_min_bound;
+  double real_y = (delta_y_bound * (1000 - y))/1000 - y_min_bound;
+  double new_delta_x = delta_x_bound/4.0;
+  double new_x_min_bound = real_x - new_delta_x;
+  double new_x_max_bound = real_x + new_delta_x;
+  double new_delta_y = delta_y_bound/4.0;
+  double new_y_min_bound = real_y - new_delta_y; 
+  double new_y_max_bound = real_y + new_delta_y;
+
+  x_min_bound = new_x_min_bound;
+  x_max_bound = new_x_max_bound;
+  y_min_bound = new_y_min_bound;
+  y_max_bound = new_y_max_bound;
+
+}
+  
 // auflösung 1000x1000
 // Todo: Auflösung mit als parameter angeben
 struct values{
@@ -94,3 +125,5 @@ int main() {
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(ende - start).count();
   std::cout << "Zeitdauer: " << duration << std::endl;
 }
+
+
