@@ -46,8 +46,16 @@ struct values{
   size_t length_x;
   size_t start_y;
   size_t length_y;
-  size_t resolution;
+  size_t resolution_x;
+  size_t resolution_y;  
 };
+
+
+12 13|14 15
+ 8  9|10 11
+-----+------
+ 4  5| 6  7
+ 0  1| 2  3
 
 unsigned int mandelbrot_point(
     double x,
@@ -67,25 +75,31 @@ unsigned int mandelbrot_point(
   }
   return 0;
 }
+/*
+  size_t start_x;
+  size_t length_x;
+  size_t start_y;
+  size_t length_y;
+*/
 
 void mandelbrot_thread_fct(values data) {
 
-  unsigned int row_size = 3 * 1000;
-  unsigned int column_size = 3;
+  // unsigned int row_size = 3 * 1000;
+  // unsigned int column_size = 3;
 
-  for (unsigned int y_coord = data.start_y; y_coord < data.start_y + data.length_y; y_coord++){
-    for (unsigned int x_coord = data.start_x; x_coord < data.start_x + data.length_x; x_coord++){
-      double x = x_coord/500.0 - 1.5;
-      double y = y_coord/500.0 - 1;
-      unsigned int value = mandelbrot_point(x,y,2.0,255);
-      // offeset = 3* (1000)*y_coord + x_coord)
-      // pixel(offset +3))
+  for (unsigned int y = 0; y < data.resolution_y; y++){
+    for (unsigned int x = 0; x < data.resolution_x; x++){
+      double x_real = data.length_x * x/data.resolution_x + data.start_x;
+      double y_real = data.length_y * y/data.resolution_y + data.start_y;
+      unsigned int value = mandelbrot_point(x_real, y_real, 2.0, 255);
+
+      /* ToDo refactor access to image
       data.image_pixel[row_size * y_coord + column_size * x_coord + 0 ] = value; // r
       data.image_pixel[row_size * y_coord + column_size * x_coord + 1 ] = value; // g
       data.image_pixel[row_size * y_coord + column_size * x_coord + 2 ] = value; // b
+      */
     }
   }
-
 }
 
 // write a single byte compressed by tooJpeg
@@ -97,10 +111,10 @@ void mandelbrot(){
   // get 1000x1000 pixels of 3 values RGB on the heap
   unsigned char* image_pixel = new unsigned char[1000*1000*3];
 
-  values mandelbrot_data1{image_pixel, 0, 1000, 0, 250, 0 };
-  values mandelbrot_data2{image_pixel, 0, 1000, 250, 250, 0 };
-  values mandelbrot_data3{image_pixel, 0, 1000, 500, 250, 0 };
-  values mandelbrot_data4{image_pixel, 0, 1000, 750, 250, 0 };
+  values mandelbrot_data1{image_pixel, 0, 1000, 0, 250, 1000, 250 };
+  values mandelbrot_data2{image_pixel, 0, 1000, 250, 250, 1000, 250 };
+  values mandelbrot_data3{image_pixel, 0, 1000, 500, 250, 1000, 250 };
+  values mandelbrot_data4{image_pixel, 0, 1000, 750, 250, 1000, 250 };
   std::thread t1(mandelbrot_thread_fct,mandelbrot_data1);
   std::thread t2(mandelbrot_thread_fct,mandelbrot_data2);
   std::thread t3(mandelbrot_thread_fct,mandelbrot_data3);
