@@ -4,6 +4,7 @@
 #include "toojpeg.h"
 #include <fstream>
 #include <thread>
+#include <future>
 
 std::ofstream myFile("mandelbrot.jpg", std::ios_base::out | std::ios_base::binary);
 
@@ -41,21 +42,13 @@ void mandelbrot_window_parameter::zoom_in(unsigned int x, unsigned int y) {
 // auflösung 1000x1000
 // Todo: Auflösung mit als parameter angeben
 struct values{
-  unsigned char* image_pixel;
   size_t start_x;
   size_t length_x;
   size_t start_y;
   size_t length_y;
   size_t resolution_x;
-  size_t resolution_y;  
+  size_t resolution_y;
 };
-
-
-12 13|14 15
- 8  9|10 11
------+------
- 4  5| 6  7
- 0  1| 2  3
 
 unsigned int mandelbrot_point(
     double x,
@@ -82,24 +75,19 @@ unsigned int mandelbrot_point(
   size_t length_y;
 */
 
-void mandelbrot_thread_fct(values data) {
+unsigned int* mandelbrot_thread_fct(values data) {
 
-  // unsigned int row_size = 3 * 1000;
-  // unsigned int column_size = 3;
-
+  unsigned int* result =(unsigned int*)malloc(data.resolution_y * data.resolution_x * sizeof(unsigned int));
+  
   for (unsigned int y = 0; y < data.resolution_y; y++){
     for (unsigned int x = 0; x < data.resolution_x; x++){
       double x_real = data.length_x * x/data.resolution_x + data.start_x;
       double y_real = data.length_y * y/data.resolution_y + data.start_y;
       unsigned int value = mandelbrot_point(x_real, y_real, 2.0, 255);
-
-      /* ToDo refactor access to image
-      data.image_pixel[row_size * y_coord + column_size * x_coord + 0 ] = value; // r
-      data.image_pixel[row_size * y_coord + column_size * x_coord + 1 ] = value; // g
-      data.image_pixel[row_size * y_coord + column_size * x_coord + 2 ] = value; // b
-      */
+      result[y * data.resolution_x + x] = value;
     }
   }
+  return result;
 }
 
 // write a single byte compressed by tooJpeg
@@ -111,24 +99,30 @@ void mandelbrot(){
   // get 1000x1000 pixels of 3 values RGB on the heap
   unsigned char* image_pixel = new unsigned char[1000*1000*3];
 
-  values mandelbrot_data1{image_pixel, 0, 1000, 0, 250, 1000, 250 };
-  values mandelbrot_data2{image_pixel, 0, 1000, 250, 250, 1000, 250 };
-  values mandelbrot_data3{image_pixel, 0, 1000, 500, 250, 1000, 250 };
-  values mandelbrot_data4{image_pixel, 0, 1000, 750, 250, 1000, 250 };
-  std::thread t1(mandelbrot_thread_fct,mandelbrot_data1);
-  std::thread t2(mandelbrot_thread_fct,mandelbrot_data2);
-  std::thread t3(mandelbrot_thread_fct,mandelbrot_data3);
-  std::thread t4(mandelbrot_thread_fct,mandelbrot_data4);
+  values mandelbrot_data1{ 0, 1000, 0, 250, 1000, 250 };
+  values mandelbrot_data2{ 0, 1000, 250, 250, 1000, 250 };
+  values mandelbrot_data3{ 0, 1000, 500, 250, 1000, 250 };
+  values mandelbrot_data4{ 0, 1000, 750, 250, 1000, 250 };
+  
+  std::future<unsigned int*> f1 = std::async(mandelbrot_thread_fct,mandelbrot_data1);
+  std::future<unsigned int*> f2 = std::async(mandelbrot_thread_fct,mandelbrot_data2);
+  std::future<unsigned int*> f3 = std::async(mandelbrot_thread_fct,mandelbrot_data3);
+  std::future<unsigned int*> f4 = std::async(mandelbrot_thread_fct,mandelbrot_data4);
 
-  t1.join();
-  t2.join();
-  t3.join();
-  t4.join();
+  unsigned int* result1 = f1.get();
+  unsigned int* result2 = f2.get();
+  unsigned int* result3 = f3.get();
+  unsigned int* result4 = f4.get();
 
-  bool ok = TooJpeg::writeJpeg(myOutputFct , image_pixel, 1000, 1000,
-                      true, 90, false, "toojpeg mandelbrot example");
-  printf("error? %d \n",ok);
-  delete[] image_pixel;
+  //todo alle results in pixmap kopieren
+  
+  //  bool ok = TooJpeg::writeJpeg(myOutputFct , image_pixel, 1000, 1000,
+  //                    true, 90, false, "toojpeg mandelbrot example");
+  //printf("error? %d \n",ok);
+  delete[] result1;
+  delete[] result2;
+  delete[] result3;
+  delete[] result4;
 }
 
 
