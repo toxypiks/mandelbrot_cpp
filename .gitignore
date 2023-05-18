@@ -1,0 +1,5 @@
+**/build/
+**/*~
+**/src/*.cpp#
+**/#notizen.txt#
+**/notizen.txt
